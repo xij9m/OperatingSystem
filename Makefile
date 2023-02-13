@@ -1,59 +1,44 @@
 #
-# Makefile for MPX
+# Makefile for MPX Modules
 
-AS	= nasm
-CC	= i386-elf-gcc
-CFLAGS  = -Wall -Wextra -Werror -nostartfiles -nodefaultlibs -nostdlib -g -c
-LD	= i386-elf-ld
-LDFLAGS = -T link.ld
+AS      = nasm
+CC      = i386-elf-gcc
+CFLAGS  = -Wall -Wextra -Werror -nostartfiles -nostdlib -nodefaultlibs -ffreestanding -g -c
+LD      = i386-elf-ld
+LDFLAGS = 
 ASFLAGS = -f elf -g
 
+# add new files as you create them.
+# I'll start you off with just mpx_supt.o
 OBJFILES =\
-boot/loader.o\
-kernel/kernel.o
+mpx_supt.o\
+comhand.o\
+R1.o\
+BCDs.o\
+itoa.o\
+PCBs.o\
+ProceduresR2.o\
+QueueR2.o\
+startup.o\
+R2.o\
+procsr3.o\
+R3.o\
+R4.o\
+R5.o\
+R6.o\
+newTestProcs.o\
 
-MODULES =\
-modules/modules.o
-
-LIBS =\
-lib/lib.o
-
-# 1) declare your MODULES (see OBJFILES,LIBS above)
-
-all: kernel.bin
-
+.c.s:
+	$(CC) $(CFLAGS) -S -o $@ $<
 .s.o:
 	$(AS) $(ASFLAGS) -o $@ $<
-.c.o: 
-# 2) Modify this to add an include directory
-	$(CC) $(CFLAGS) -I./include -I./modules -o $@ $< 
+.c.o:
+	$(CC) $(CFLAGS) -I../include -o $@ $<
 
-.PHONY : kernel/kernel.o
-kernel/kernel.o:
-	(cd kernel ; make)
+all: modules.o
 
-# LIBS
-.PHONY : lib/lib.o
-lib/lib.o:
-	(cd lib ; make)
+modules.o: $(OBJFILES)
+	$(LD) -r -o modules.o $(OBJFILES)
 
-# 3) Build your modules
-.PHONY : modules/modules.o
-modules/modules.o:
-	(cd modules; make)
-
-.PHONY : kernel.bin
-kernel.bin: $(OBJFILES) $(LIBS) $(MODULES)
-	$(LD) $(LDFLAGS) -o $@ $(OBJFILES) $(LIBS) $(MODULES)
-
-.PHONY : kernel.img
-kernel.img: kernel.bin
-	dd if=/dev/zero of=pad bs=1 count=750
-	cat boot/grub/stage1 boot/grub/stage2 pad kernel.bin > $@
-
-# 6) Add a clean routine for your modules if you like
 clean:
-	(cd kernel ; make clean)
-	(cd lib ; make clean)
-	(cd modules ; make clean)
-	rm -f $(OBJFILES) $(LIBS) kernel.bin kernel.img pad
+	rm modules.o $(OBJFILES)
